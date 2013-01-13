@@ -8,8 +8,8 @@
 
 ### BEGIN INIT INFO
 # Provides:          virtualbox-vms
-# Required-Start:    $remote_fs $syslog $network virtualbox
-# Required-Stop:     $remote_fs $syslog $network virtualbox
+# Required-Start:    $remote_fs $syslog $network virtualbox +virtualbox-ose
+# Required-Stop:     $remote_fs $syslog $network virtualbox +virtualbox-ose
 # Should-Start:
 # Should-Stop:
 # Default-Start:     2 3 4 5
