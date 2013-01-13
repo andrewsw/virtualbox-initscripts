@@ -1,0 +1,103 @@
+#! /bin/sh
+# /etc/init.d/virtualbox-vms
+#
+# Written by: Andrew Sackville-West <andrew@swclan.homelinux.org>
+#
+# adapted from code by Fabio Milano found at:
+# http://www.kernelhardware.org/virtualbox-auto-start-vm-centos-fedora-redhat/
+
+### BEGIN INIT INFO
+# Provides:          virtualbox-vms
+# Required-Start:    $remote_fs $syslog $network virtualbox
+# Required-Stop:     $remote_fs $syslog $network virtualbox
+# Should-Start:
+# Should-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: virtualbox headless vm startup
+# Description:       starts virtualbox headless vms listed in /etc/virtualbox/vms_enabled
+### END INIT INFO
+
+set -e
+
+# Configuration
+VBOXDIR="/etc/virtualbox"
+VM_USER="root"
+
+[ -f /etc/default/virtualbox-vms ] && . /etc/default/virtualbox-vms
+
+SU="su $VM_USER -c"
+VBOXMANAGE="vboxmanage -nologo"
+
+log_action_msg() {
+    echo $1
+}
+# Check for running machiens until all machines are down
+wait_for_closing_machines() {
+    RUNNING_MACHINES=`$SU "$VBOXMANAGE list runningvms" | wc -l`
+    if [ $RUNNING_MACHINES != 0 ]; then
+        sleep 5
+        wait_for_closing_machines
+    fi
+}
+
+# iterate over and start all vms in $VBOXDIR/machines_enabled
+start_vms() {
+    if [ -f $VBOXDIR/machines_enabled ]; then
+        cat $VBOXDIR/machines_enabled | while read VM; do
+            log_action_msg "Starting VM: $VM ..."
+            $SU "$VBOXMANAGE startvm \"$VM\" --type headless"
+            RETVAL=$?
+            if [ ! $RETVAL ]; then
+                log_action_msg "Error starting VM: ${VM}"
+            fi
+        done
+    else
+        log_action_msg "No VMs specified in $VBOXDIR/machines_enabled. Not starting VMs."
+    fi
+}
+
+#iterate over and stop all vms in $VBOXDIR/machines_enabled
+stop_vms() {
+    if [ -f $VBOXDIR/machines_enabled ]; then
+        cat $VBOXDIR/machines_enabled | while read VM; do
+            if $SU "$VBOXMANAGE list runningvms | grep $VM"; then
+                log_action_msg "Stopping VM: $VM ..."
+                $SU "$VBOXMANAGE controlvm \"$VM\" acpipowerbutton"
+                RETVAL=$?
+                if [ ! $RETVAL ]; then
+                    log_action_msg "Error stopping VM: ${VM}"
+                fi
+            else
+                log_action_msg "Not stopping VM: $VM. It's not running!"
+            fi
+        done
+    else
+        log_action_msg "No VMs specified in $VBOXDIR/machines_enabled. Nothing to stop. If other VMs are known to be running, stop them manually."
+    fi
+}
+
+usage() {
+    echo "Usage: $0 {start|stop}"
+}
+
+case "$1" in
+    start)
+        start_vms
+        ;;
+    stop)
+        stop_vms
+        wait_for_closing_machines
+        ;;
+    restart|reload|force-reload)
+        log_action_msg "Action $1 not supported."
+        usage
+        exit 1
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+esac
+
+exit 0

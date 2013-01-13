@@ -1,0 +1,7 @@
+# /etc/default/virtualbox-vms
+
+# location of the virtualbox-vms configuration files
+# VBOXDIR="/etc/virtualbox"
+
+# the user who owns the VMs to run
+# VM_USER="root"
