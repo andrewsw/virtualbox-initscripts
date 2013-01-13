@@ -27,7 +27,7 @@ VM_USER="root"
 [ -f /etc/default/virtualbox-vms ] && . /etc/default/virtualbox-vms
 
 SU="su $VM_USER -c"
-VBOXMANAGE="vboxmanage -nologo"
+VBOXMANAGE="vboxmanage --nologo"
 
 log_action_msg() {
     echo $1
